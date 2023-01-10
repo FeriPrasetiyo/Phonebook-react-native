@@ -3,7 +3,7 @@ import { loadUser, addUser, removeUser, updateUser } from './userAPI';
 import axios from 'axios';
 
 const request = axios.create({
-    baseURL: 'http://192.168.1.30:3000/'
+    baseURL: 'http://192.168.1.77:3000/'
 });
 
 const initialState = {
@@ -21,7 +21,7 @@ export const loadUserAsync = createAsyncThunk(
     'user/loadUser',
     async () => {
         const response = await loadUser();
-        return response.data.data[0];
+        return { data: response.data.data[0].users, page: response.data.data[0].page, pages: response.data.data[0].pages };
     }
 );
 
@@ -32,7 +32,6 @@ export const addUserAsync = createAsyncThunk(
             const response = await addUser(name, phone);
             return { succses: true, id, user: response.data.data };
         } catch (err) {
-            console.log(err)
             return { succses: false, id };
         }
     }
@@ -57,7 +56,6 @@ export const updateUserAsync = createAsyncThunk(
             const response = await updateUser(id, name, phone);
             return { succses: true, id, user: response.data.data };
         } catch (err) {
-            console.log(err)
             return { succses: false, id };
         }
     }
@@ -81,6 +79,7 @@ export const userSlice = createSlice({
     reducers: {
         add: (state, action) => {
             state.value = {
+                ...state.value,
                 users: [
                     ...state.value.users,
                     {
@@ -93,6 +92,7 @@ export const userSlice = createSlice({
         },
         edit: (state, action) => {
             state.value = {
+                ...state.value,
                 users: [
                     ...state.value.users,
                     {
@@ -109,7 +109,7 @@ export const userSlice = createSlice({
                     item.sent = true
                     return item
                 })],
-                ...state.value.params,
+                // ...state.value.params,
                 params: action.payload.params
             }
         },
@@ -133,36 +133,38 @@ export const userSlice = createSlice({
                 state.status = 'idle';
                 state.value =
                 {
+                    users: action.payload.data.map(item => {
+                        item.sent = true
+                        return item
+                    }),
                     params: {
                         page: action.payload.page,
                         pages: action.payload.pages,
-                    },
-                    users: [...(state.value.params.page === 1 ? [] : state.value.users),
-                    ...action.payload.users.map(item => {
-                        item.sent = true
-                        return item
-                    })]
+                    }
                 }
             })
             .addCase(addUserAsync.fulfilled, (state, action) => {
                 state.status = 'idle';
                 if (action.payload.succses) {
-                    state.value.users = state.value.users.map(item => {
-                        if (item.id === action.id) {
-                            return {
-                                id: action.payload.user.id,
-                                name: action.payload.user.name,
-                                phone: action.payload.user.phone,
-                                sent: true
+                    state.value = {
+                        ...state.value,
+                        users: [...state.value.users.map(item => {
+                            if (item.id === action.payload.id) {
+                                return {
+                                    id: action.payload.user.id,
+                                    name: action.payload.user.name,
+                                    phone: action.payload.user.phone,
+                                    sent: true
+                                }
                             }
-                        }
-                        return item
-                    })
+                            return item
+                        })]
+                    }
                 } else {
                     state.value = {
                         ...state.value,
                         users: state.value.users.map(item => {
-                            if (item.id === action.id) {
+                            if (item.id === action.payload.id) {
                                 return { ...item, sent: false }
                             }
                             return item
@@ -174,7 +176,7 @@ export const userSlice = createSlice({
                 state.status = 'idle';
                 if (action.payload.succses) {
                     state.value.users = state.value.users.map(item => {
-                        if (item.id === action.id) {
+                        if (item.id === action.payload.id) {
                             return {
                                 id: action.payload.user.id,
                                 name: action.payload.user.name,
@@ -202,7 +204,7 @@ export const selectUser = (state) => state.user.value.users
 
 export const create = (name, phone) => (dispatch, getState) => {
     const id = Date.now()
-    dispatch(add({ name, phone }))
+    dispatch(add({ id, name, phone }))
     dispatch(addUserAsync({ id, name, phone }))
 };
 
@@ -220,7 +222,7 @@ export const loadmore = () => async (dispatch, getSate) => {
         if (state.user.value.params.page < state.user.value.params.pages) {
             let params = {
                 ...state.user.value.params,
-                page: Number(state.user.value.params.page + 1)
+                page: state.user.value.params.page + 1
             }
             request.get('users', { params: params }).then((res) => {
                 params = {
@@ -229,11 +231,11 @@ export const loadmore = () => async (dispatch, getSate) => {
                 }
                 dispatch(loadPage({ users: res.data.data[0].users, params }))
             }).catch((err) => {
-                console.log(err)
+                console.log(err, 'erro 3')
             })
         }
     } catch (err) {
-        dispatch((err))
+        console.log(err, 'erro 4')
     }
 }
 
@@ -246,7 +248,6 @@ export const searchUser = (query) => async (dispatch, getState) => {
             page: 1
         }
         const { data } = await request.get('users', { params })
-        console.log(data.data[0].users, 'data')
         params = {
             ...params,
             pages: data.data[0].pages

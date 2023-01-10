@@ -2,7 +2,7 @@ import axios from 'axios'
 
 
 const request = axios.create({
-    baseURL: 'http://192.168.1.30:3000/'
+    baseURL: 'http://192.168.1.77:3000/'
 });
 
 export const loadUser = () => request.get("users", { params: { page: 1 } })

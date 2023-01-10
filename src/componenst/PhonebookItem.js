@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         padding: 10,
         borderRadius: 20,
+        backgroundColor: 'lightgray'
     },
     edit: {
         color: 'green',
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
     input: {
         height: 40,
         margin: 5,
-        marginStart: -1,
+        marginStart: -10,
         borderWidth: 1,
         padding: 10,
         borderRadius: 10,

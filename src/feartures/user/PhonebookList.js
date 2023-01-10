@@ -33,6 +33,7 @@ export default function PhonebookList() {
             <View>
                 <FlatList data={users} renderItem={({ item, index }) => (
                     <PhonebookItem
+                        key={item.id}
                         no={index + 1}
                         user={item}
                         remove={() => dispatch(removeUserAsync(item.id))}
